@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LUBY · AI 數位人格測驗 | 尋找你的運算共鳴</title>
+    
+    <!-- ═══════════════════════════════
+         GA4 追蹤代碼 (已綁定 G-N8F6F47LZN)
+    ═══════════════════════════════ -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8F6F47LZN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-N8F6F47LZN');
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;900&family=Noto+Sans+TC:wght@200;300;400&family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════
+           LUBY DNA TOKENS & RESET
+        ═══════════════════════════════ */
+        :root {
+            --linen:      #F8F5F0;
+            --linen-deep: #EDE8E0;
+            --saddle:     #332F2A;
+            --etoupe:     #93887B;
+            --terra:      #C48A64;
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        ::selection { background: var(--terra); color: var(--linen); }
+
+        html { scroll-behavior: smooth; font-size: 16px; }
+
+        body {
+            background: var(--linen);
+            color: var(--saddle);
+            font-family: 'Noto Sans TC', sans-serif;
+            font-weight: 300;
+            min-height: 100svh;
+            overflow-x: hidden;
+            cursor: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Noise Grain Overlay ── */
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 9990; opacity: 0.8; mix-blend-mode: multiply;
+        }
+
+        /* ── Custom Cursor ── */
+        #cursor-dot {
+            width: 4px; height: 4px; background: var(--terra);
+            border-radius: 50%; position: fixed; pointer-events: none;
+            z-index: 9999; transform: translate(-50%, -50%);
+        }
+        #cursor-ring {
+            width: 40px; height: 40px; border: 1px solid rgba(196,138,100,0.5);
+            border-radius: 50%; position: fixed; pointer-events: none;
+            z-index: 9998; transform: translate(-50%, -50%);
+            transition: width 0.3s var(--ease-out-expo), height 0.3s var(--ease-out-expo), background 0.3s, border-color 0.3s;
+        }
+        body:hover #cursor-ring { opacity: 1; }
+        .cursor-hover #cursor-ring {
+            width: 60px; height: 60px; background: rgba(196,138,100,0.05); border-color: var(--terra);
+        }
+
+        /* ── Typography & Tags ── */
+        .tag {
+            display: inline-flex; align-items: center; gap: 16px;
+            font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.5em;
+            text-transform: uppercase; color: var(--etoupe);
+        }
+        .tag::before { content: ''; display: inline-block; width: 24px; height: 1px; background: var(--terra); }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 24px 5%; transition: all 0.6s var(--ease-out-expo);
+        }
+        nav.scrolled {
+            background: rgba(248, 245, 240, 0.95); backdrop-filter: blur(16px);
+            padding: 16px 5%; border-bottom: 1px solid rgba(147, 136, 123, 0.1);
+        }
+        .nav-logo {
+            font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 1.25rem;
+            letter-spacing: 0.15em; color: var(--saddle); text-decoration: none;
+        }
+        .nav-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.4em; color: var(--etoupe); text-transform: uppercase; }
+
+        /* ── Screen Management ── */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; min-height: 100svh;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 0.8s var(--ease-out-expo), visibility 0.8s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 100px 5% 60px;
+        }
+        .screen.active { opacity: 1; visibility: visible; pointer-events: auto; position: relative; }
+
+        /* ═══════════════════════════════
+           SCREEN 1: INTRO (Cinematic)
+        ═══════════════════════════════ */
+        #screen-intro { overflow: hidden; }
+        
+        .intro-bg-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic;
+            font-size: 28vw; color: rgba(147,136,123,0.04);
+            white-space: nowrap; pointer-events: none; z-index: 0; line-height: 0.8;
+        }
+
+        .intro-inner { position: relative; z-index: 2; text-align: center; }
+
+        .intro-title {
+            font-family: 'Noto Serif TC', serif; font-weight: 900;
+            font-size: clamp(3rem, 10vw, 6.5rem); line-height: 1.15; letter-spacing: -0.02em;
+            color: var(--saddle); margin: 32px 0;
+            clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
+            animation: revealUp 1.2s 0.2s var(--ease-out-expo) forwards;
+        }
+        .intro-title em { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-style: italic; color: var(--terra); }
+
+        .intro-desc {
+            font-family: 'Noto Sans TC', sans-serif; font-size: 14px; font-weight: 300;
+            letter-spacing: 0.1em; color: var(--etoupe); line-height: 2;
+            opacity: 0; transform: translateY(20px);
+            animation: fadeUp 1s 0.6s var(--ease-out-expo) forwards;
+        }
+
+        .cta-btn {
+            display: inline-block; background: var(--saddle); color: var(--linen);
+            font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5em; text-transform: uppercase;
+            padding: 24px 64px; text-decoration: none; position: relative; overflow: hidden;
+            border: none; cursor: none; margin-top: 48px;
+            opacity: 0; transform: translateY(20px);
+            animation: fadeUp 1s 0.8s var(--ease-out-expo) forwards;
+        }
+        .cta-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--terra); transition: left 0.6s var(--ease-out-expo); z-index: 0;
+        }
+        .cta-btn:hover::before { left: 0; }
+        .cta-btn span { position: relative; z-index: 1; }
+
+        /* ═══════════════════════════════
+           SCREEN 2: QUIZ (Editorial Layout)
+        ═══════════════════════════════ */
+        #screen-quiz { justify-content: flex-start; padding-top: 140px; }
+        .quiz-container { width: 100%; max-width: 680px; position: relative; z-index: 2; margin: 0 auto; }
+
+        .progress-wrap { margin-bottom: 64px; }
+        .progress-meta {
+            display: flex; justify-content: space-between; margin-bottom: 16px;
+            font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.4em; color: var(--etoupe); text-transform: uppercase;
+        }
+        .progress-track { width: 100%; height: 1px; background: rgba(147,136,123,0.2); position: relative; }
+        .progress-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--terra); transition: width 0.8s var(--ease-out-expo); }
+
+        .q-block { position: relative; margin-bottom: 48px; min-height: 120px; }
+        .q-watermark {
+            position: absolute; right: -20px; top: -50px;
+            font-family: 'Cormorant Garamond', serif; font-size: 10rem; font-style: italic;
+            color: rgba(147,136,123,0.06); line-height: 1; pointer-events: none; z-index: -1;
+        }
+        .q-label-tag { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.4em; color: var(--terra); text-transform: uppercase; margin-bottom: 16px; display: block; }
+        .q-text { font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: clamp(1.3rem, 4vw, 1.8rem); color: var(--saddle); line-height: 1.6; }
+
+        .choices { display: flex; flex-direction: column; gap: 12px; }
+        .choice-btn {
+            display: block; width: 100%; text-align: left; background: var(--linen-deep);
+            border: 1px solid rgba(147,136,123,0.1); padding: 32px 36px;
+            cursor: none; position: relative; overflow: hidden;
+            transition: all 0.5s var(--ease-out-expo);
+        }
+        .choice-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 0;
+            background: var(--terra); transition: width 0.4s var(--ease-out-expo);
+        }
+        .choice-btn:hover { background: rgba(147,136,123,0.08); padding-left: 48px; border-color: rgba(147,136,123,0.3); }
+        .choice-btn:hover::before { width: 4px; }
+        
+        .choice-key { display: block; font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.3em; color: var(--terra); text-transform: uppercase; margin-bottom: 12px; }
+        .choice-text { font-family: 'Noto Sans TC', sans-serif; font-size: 15px; font-weight: 300; color: var(--saddle); line-height: 1.8; }
+
+        /* ═══════════════════════════════
+           SCREEN 3: RESULT (High-End Editorial)
+        ═══════════════════════════════ */
+        #screen-result { justify-content: flex-start; padding-top: 100px; padding-bottom: 0; }
+        .result-wrap { width: 100%; max-width: 800px; margin: 0 auto; }
+
+        /* 1. Hero Card */
+        .r-hero-card {
+            background: var(--saddle); color: var(--linen);
+            padding: 80px 8% 60px; position: relative; overflow: hidden; margin-bottom: 24px;
+        }
+        .rh-eyebrow { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.5em; color: rgba(248,245,240,0.5); text-transform: uppercase; margin-bottom: 24px; }
+        .rh-name { font-family: 'Cormorant Garamond', serif; font-size: clamp(3.5rem, 12vw, 6rem); font-style: italic; color: var(--terra); line-height: 1; margin-bottom: 16px; }
+        .rh-tag { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em; color: rgba(248,245,240,0.8); text-transform: uppercase; margin-bottom: 40px; }
+        .rh-line { width: 60px; height: 1px; background: var(--terra); margin-bottom: 40px; }
+        .rh-headline { font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 1.4rem; line-height: 1.6; margin-bottom: 24px; }
+        .rh-body { font-size: 14px; color: rgba(248,245,240,0.65); line-height: 2.1; font-weight: 300; }
+
+        /* 2. Typographic Proverb (巨型浮水印版 + 互動擴充) */
+        .typographic-proverb {
+            padding: 60px 5%; margin-bottom: 24px; text-align: center; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px;
+        }
+        .typographic-proverb::before {
+            content: '“'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -30%);
+            font-family: 'Cormorant Garamond', serif; font-size: 30rem; color: rgba(147,136,123,0.06);
+            line-height: 0; pointer-events: none; z-index: 0;
+        }
+        .proverb-slide { position: absolute; width: 90%; opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 1s; transform: translateY(10px); z-index: 1; pointer-events: none; }
+        .proverb-slide.active { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 1s ease, transform 1s var(--ease-out-expo); pointer-events: auto; }
+        
+        .pv-en { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.4rem, 4vw, 1.8rem); font-style: italic; color: var(--terra); line-height: 1.6; margin-bottom: 16px; pointer-events: none; }
+        .pv-zh { font-family: 'Noto Serif TC', serif; font-weight: 400; font-size: clamp(0.95rem, 2.5vw, 1.1rem); color: var(--saddle); line-height: 1.8; margin-bottom: 32px; pointer-events: none; }
+        .pv-meta { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.25em; color: var(--etoupe); text-transform: uppercase; pointer-events: none; }
+        .pv-meta span { font-family: 'Noto Sans TC', sans-serif; letter-spacing: 0.1em; opacity: 0.5; margin-left: 8px; }
+
+        /* 3. MBTI Grid */
+        .mbti-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: rgba(147,136,123,0.15); border: 1px solid rgba(147,136,123,0.15); margin-bottom: 2px; }
+        .mbti-box { background: var(--linen-deep); padding: 32px 24px; }
+        .mbti-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.3em; color: var(--terra); text-transform: uppercase; margin-bottom: 12px; }
+        .mbti-val { font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 1.1rem; color: var(--saddle); }
+
+        /* 4. Tips (Protocol) */
+        .ed-section { background: var(--linen-deep); padding: 48px 8%; margin-bottom: 2px; border: 1px solid rgba(147,136,123,0.15); }
+        .ed-header { margin-bottom: 32px; font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.4em; color: var(--etoupe); text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
+        .ed-header::before { content: ''; width: 20px; height: 1px; background: var(--terra); }
+        .protocol-list { border-top: 1px solid rgba(147,136,123,0.2); }
+        .protocol-item { display: flex; gap: 24px; padding: 24px 0; border-bottom: 1px solid rgba(147,136,123,0.2); }
+        .protocol-dot { width: 4px; height: 4px; background: var(--terra); border-radius: 50%; margin-top: 10px; flex-shrink: 0; }
+        .protocol-text { font-size: 14px; color: var(--saddle); line-height: 1.9; font-weight: 300; }
+
+        /* 5. Collab Box */
+        .collab-box { background: var(--linen); padding: 40px 8%; border: 1px solid rgba(147,136,123,0.15); margin-bottom: 2px; border-top: none; position: relative; }
+        .collab-box::before { content: '好同事相處法'; position: absolute; top: -8px; left: 8%; background: var(--linen); padding: 0 8px; font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.3em; color: var(--terra); text-transform: uppercase; }
+        .collab-text { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--saddle); line-height: 1.9; }
+
+        /* 6. Blind Box */
+        .blind-box { background: var(--saddle); padding: 48px 8%; margin-bottom: 2px; position: relative; overflow: hidden; }
+        .blind-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(to right, var(--terra), transparent); }
+        .blind-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.4em; color: rgba(248,245,240,0.5); text-transform: uppercase; margin-bottom: 16px; }
+        .blind-name { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: var(--terra); line-height: 1; margin-bottom: 16px; }
+        .blind-desc { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: rgba(248,245,240,0.7); line-height: 1.9; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(248,245,240,0.1); }
+        .blind-tip-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.3em; color: var(--terra); text-transform: uppercase; margin-bottom: 12px; }
+        .blind-tip { font-size: 13px; color: rgba(248,245,240,0.5); line-height: 1.9; font-weight: 300; }
+
+        /* 7. Combo Box */
+        .combo-box { background: var(--linen-deep); padding: 48px 8%; margin-bottom: 2px; border: 1px solid rgba(147,136,123,0.15); }
+        .combo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+        .combo-card { background: var(--linen); border: 1px solid rgba(147,136,123,0.15); padding: 24px; position: relative; overflow: hidden; }
+        .combo-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--terra); }
+        .combo-name { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--terra); margin-bottom: 8px; line-height: 1; }
+        .combo-role { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 0.3em; color: var(--etoupe); text-transform: uppercase; margin-bottom: 12px; }
+        .combo-duty { font-size: 12px; color: var(--saddle); line-height: 1.8; font-weight: 300; }
+        .combo-desc { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--etoupe); line-height: 1.9; padding-top: 24px; border-top: 1px solid rgba(147,136,123,0.15); }
+
+        /* 8. Friend Box */
+        .friend-box { background: var(--saddle); padding: 48px 8%; margin-bottom: 2px; position: relative; overflow: hidden; }
+        .friend-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(to right, transparent, var(--terra), transparent); }
+        .friend-eyebrow { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.4em; color: rgba(248,245,240,0.4); text-transform: uppercase; margin-bottom: 16px; }
+        .friend-type { font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 1.4rem; color: var(--linen); line-height: 1.5; margin-bottom: 24px; }
+        .friend-body { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: rgba(248,245,240,0.6); line-height: 1.9; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(248,245,240,0.1); }
+        .friend-hint { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.3em; color: rgba(196,138,100,0.6); text-transform: uppercase; }
+
+        /* 9. Restart */
+        .restart-wrap { text-align: center; padding: 60px 0 60px; }
+        .btn-outline {
+            display: inline-block; background: transparent; border: 1px solid rgba(147,136,123,0.4); color: var(--saddle);
+            font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase;
+            padding: 24px 64px; cursor: none; transition: all 0.5s var(--ease-out-expo); text-decoration: none;
+            position: relative; overflow: hidden;
+        }
+        .btn-outline::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: rgba(147,136,123,0.08); transition: left 0.5s var(--ease-out-expo); z-index: 0;
+        }
+        .btn-outline:hover { border-color: var(--terra); color: var(--terra); }
+        .btn-outline:hover::before { left: 0; }
+        .btn-outline span { position: relative; z-index: 1; }
+
+        /* Footer Simple */
+        footer { padding: 40px 5% 60px; text-align: center; }
+        .f-logo { font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 1.25rem; letter-spacing: 0.2em; color: var(--saddle); margin-bottom: 12px; opacity: 0.8; }
+        .f-sub { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 0.3em; color: var(--etoupe); text-transform: uppercase; }
+
+        /* Reveal Utils */
+        @keyframes revealUp { from { clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%); transform: translateY(40px); } to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo); }
+        .fade-in.on { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.15s; } .delay-2 { transition-delay: 0.3s; }
+    </style>
+</head>
+<body>
+
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+    <a class="nav-logo interactable" href="#">LUBY</a>
+    <div class="nav-label">AI Persona Test</div>
+</nav>
+
+<!-- ════════════ SCREEN 1: INTRO ════════════ -->
+<div class="screen active" id="screen-intro">
+    <div class="intro-bg-text" id="bg-text">LUBY AI</div>
+    <div class="intro-inner">
+        <h1 class="intro-title">五個 AI<br><em>五種人格</em></h1>
+        <p class="intro-desc">你和哪個 AI 最對頻？<br>八道兩難，沒有標準答案。</p>
+        <button class="cta-btn interactable" onclick="startQuiz()"><span>開始測驗</span></button>
+    </div>
+</div>
+
+<!-- ════════════ SCREEN 2: QUIZ ════════════ -->
+<div class="screen" id="screen-quiz">
+    <div class="quiz-container">
+        <div class="progress-wrap">
+            <div class="progress-meta">
+                <span id="q-counter">題目 1 / 8</span>
+                <span id="q-category">—</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="q-block" id="q-block">
+            <div class="q-watermark" id="q-num">01</div>
+            <div class="q-label-tag" id="q-label-tag">工作情境</div>
+            <div class="q-text" id="q-text"></div>
+        </div>
+
+        <div class="choices" id="choices"></div>
+    </div>
+</div>
+
+<!-- ════════════ SCREEN 3: RESULT ════════════ -->
+<div class="screen" id="screen-result">
+    <div class="result-wrap">
+        
+        <!-- 1. 截圖卡 -->
+        <div class="r-hero-card fade-in">
+            <div class="rh-eyebrow">你的 AI 人格是</div>
+            <div class="rh-name" id="r-name">—</div>
+            <div class="rh-tag" id="r-tag">—</div>
+            <div class="rh-line"></div>
+            <div class="rh-headline" id="r-headline">—</div>
+            <div class="rh-body" id="r-body">—</div>
+        </div>
+
+        <!-- 2. Typographic Proverb (巨型浮水印版 + 互動暫停) -->
+        <div class="typographic-proverb fade-in delay-1 interactable" id="proverb-container">
+            <!-- JS 注入箴言 -->
+        </div>
+
+        <!-- 3. MBTI -->
+        <div class="mbti-grid fade-in delay-2" id="r-mbti"></div>
+
+        <!-- 4. 相處說明書 -->
+        <div class="ed-section fade-in">
+            <div class="ed-header">你們的相處說明書</div>
+            <div class="protocol-list" id="r-tips"></div>
+        </div>
+
+        <!-- 5. 好同事相處法 -->
+        <div class="collab-box fade-in">
+            <div class="collab-text" id="r-collab">—</div>
+        </div>
+
+        <!-- 6. AI 盲點 -->
+        <div class="blind-box fade-in">
+            <div class="blind-label">你的 AI 盲點</div>
+            <div class="blind-name" id="blind-ai-name">—</div>
+            <div class="blind-desc" id="blind-desc">—</div>
+            <div class="blind-tip-label">怎麼開始用它</div>
+            <div class="blind-tip" id="blind-tip">—</div>
+        </div>
+
+        <!-- 7. AI 組合 -->
+        <div class="combo-box fade-in">
+            <div class="ed-header" style="margin-bottom: 24px;">你的 AI 組合</div>
+            <div class="combo-grid" id="r-combo"></div>
+            <div class="combo-desc" id="r-combo-desc">—</div>
+        </div>
+
+        <!-- 8. 朋友說明書 -->
+        <div class="friend-box fade-in">
+            <div class="friend-eyebrow">如果你想跟我合作你要知道我是</div>
+            <div class="friend-type" id="friend-type">—</div>
+            <div class="friend-body" id="friend-body">—</div>
+            <div class="friend-hint">✦ 截圖傳給你的合作夥伴</div>
+        </div>
+
+        <!-- 9. 重新測驗 -->
+        <div class="restart-wrap fade-in">
+            <button class="btn-outline interactable" onclick="restartQuiz()"><span>重新測驗</span></button>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="fade-in">
+            <div class="f-logo">LUBY</div>
+            <div class="f-sub">© 2026 Haute Couture AI Atelier</div>
+        </footer>
+
+    </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   DATA (8題完美數學矩陣 + 修正語意)
+══════════════════════════════════════════ */
+const questions = [
+  {label: "Project Initiation", text: "老闆突然丟一個你完全不熟悉的任務，你第一個反應是？",
+    a: {text: "啟動全域掃描，掌握全局框架後再動手", scores: {gemini:3, gpt:2, claude:1, grok:0, copilot:0}},
+    b: {text: "鎖定核心目標，單線切入以務實推進", scores: {copilot:3, grok:2, gpt:0, gemini:0, claude:0}}},
+  {label: "Communication Protocol", text: "你比較希望一個人怎麼跟你說話？",
+    a: {text: "去冗存精，直接給我結論與可執行的指令", scores: {grok:3, copilot:2, gpt:1, gemini:0, claude:0}},
+    b: {text: "深度解析脈絡，展現理解深度後再給建議", scores: {claude:3, gemini:2, gpt:0, grok:0, copilot:0}}},
+  {label: "Decision Matrix", text: "做決定的時候，你更相信哪個？",
+    a: {text: "堅實的數據與可追溯的邏輯鏈，精確至上", scores: {gemini:3, copilot:2, gpt:0, claude:0, grok:0}},
+    b: {text: "破壞性的直覺，跳脫既有框架看見本質", scores: {gpt:3, grok:2, claude:1, gemini:0, copilot:0}}},
+  {label: "Synergy Mode", text: "理想的工作夥伴是？",
+    a: {text: "具備發散思維的跨界者，隨時能激起漣漪", scores: {gpt:3, claude:2, gemini:0, grok:0, copilot:0}},
+    b: {text: "極度專注的工匠，將眼前的任務做到無可挑剔", scores: {copilot:3, gemini:2, grok:1, gpt:0, claude:0}}},
+  {label: "Information Architecture", text: "你更需要哪種資訊？",
+    a: {text: "市場的脈搏：即時、高頻、甚至未經證實的動態", scores: {grok:3, gpt:2, claude:0, gemini:0, copilot:0}},
+    b: {text: "系統的深海：具備歷史縱深、結構完整的推演", scores: {claude:3, gemini:2, copilot:1, gpt:0, grok:0}}},
+  {label: "Tool Philosophy", text: "對於工具，你更在意哪件事？",
+    a: {text: "拓展邊界：它必須無所不能，顛覆既有工作流", scores: {gpt:3, grok:2, claude:0, gemini:0, copilot:0}},
+    b: {text: "完美契合：它必須深刻理解我的意圖，穩定運作", scores: {copilot:3, claude:2, gemini:1, gpt:0, grok:0}}},
+  {label: "Risk Tolerance", text: "面對創新的抉擇，你傾向哪一種策略？",
+    a: {text: "高風險高報酬：寧可選擇極具野心但瘋狂的點子", scores: {grok:3, gpt:2, claude:0, gemini:0, copilot:0}},
+    b: {text: "風險對沖：偏好結構嚴謹、具備高度防禦性的策略", scores: {claude:3, gemini:2, copilot:2, gpt:0, grok:0}}},
+  {label: "Ultimate Value", text: "你認為一份完美的交付成果應該是？",
+    a: {text: "一個能無縫串聯各個節點、具備規模化的運作系統", scores: {gemini:3, copilot:2, gpt:0, claude:0, grok:0}},
+    b: {text: "一個能刺穿表象、帶來典範轉移的殘酷真相或洞見", scores: {claude:3, gpt:2, grok:2, gemini:0, copilot:0}}}
+];
+
+const results = {
+  gpt: {
+    name: "GPT", tag: "OPENAI · 品類定義者",
+    headline: "你需要一個什麼都懂、隨時能接話的知識型夥伴。",
+    body: "你思維跳躍、好奇心重，習慣在對話中找靈感。GPT 像一個博學的朋友——不一定每次都完全準確，但它總能讓對話繼續下去。而你，正好需要這種能量。",
+    mbti: [{label: "思考模式", val: "發散型"}, {label: "溝通需求", val: "即時回饋"}, {label: "資訊偏好", val: "廣度優先"}, {label: "合作節奏", val: "高頻互動"}],
+    tips: ["給它角色設定——「你是一個資深行銷顧問」，它會立刻進入狀態","不用擔心問題太奇怪，它幾乎沒有接不住的話題","重要決策記得查證，它有時候太想給你一個答案了"],
+    collab: "把它當成你的腦力激盪對象。想法丟進去，它會生出十種可能性。你的工作是從中挑出那一個真正對的。",
+    blind: {name: "Claude", desc: "你習慣廣泛探索，但很少停下來深挖一件事。Claude 最擅長的就是那個「停下來」的動作——幫你把一個模糊的念頭拆解成清晰的邏輯。", tip: "把你最近卡住的一個問題，原原本本告訴 Claude，不用整理，就像跟朋友說話一樣。看它怎麼幫你拆開。"},
+    combo: {cards: [{name: "GPT", role: "主力", duty: "創意發散、腦力激盪、快速原型"}, {name: "Claude", role: "補強", duty: "深度分析、邏輯拆解、長文優化"}], desc: "你用 GPT 開路，用 Claude 收尾。廣度先行，深度壓陣——這是最適合你的雙 AI 工作流。"},
+    friend: {type: "創意發散型 · GPT 人格", body: "我思維跳躍、點子多，和我合作你會得到很多可能性。但我需要你幫我收斂——當我說太多時，幫我問那個最關鍵的問題。我最怕的不是沒有想法，是想法太多選不到。"}
+  },
+  gemini: {
+    name: "Gemini", tag: "GOOGLE · 生態整合者",
+    headline: "你需要一個能跨平台、整合資料的系統型夥伴。",
+    body: "你習慣用數據說話，喜歡把分散的資訊整合成清晰的全局。Gemini 像一個記憶體超大但有點分心的分析師，它最強的地方是整合——把 Google 生態系的資訊串成你需要的答案。",
+    mbti: [{label: "思考模式", val: "整合型"}, {label: "溝通需求", val: "結構清晰"}, {label: "資訊偏好", val: "多源整合"}, {label: "合作節奏", val: "系統導向"}],
+    tips: ["讓它連接 Google Workspace，這個生態系才是它的主場","給它明確的分析框架，它的整合能力會讓你驚訝","複雜指令拆開給，它有時候會在多任務中迷失方向"],
+    collab: "把它當成你的資料分析師。丟給它一堆原始資料，告訴它你要看什麼維度，它會幫你整理出清晰的結構。",
+    blind: {name: "Grok", desc: "你擅長整理已知的資訊，但容易錯過「現在正在發生的事」。Grok 活在當下——它的即時資訊能力正好補上你系統思維的時間盲點。", tip: "早上花五分鐘，丟一個你的產業關鍵字給 Grok，問它「今天有什麼值得注意的動態」。比看新聞快三倍。"},
+    combo: {cards: [{name: "Gemini", role: "主力", duty: "資料整合、Google 生態、結構分析"}, {name: "Grok", role: "補強", duty: "即時趨勢、市場動態、外部雷達"}], desc: "你用 Gemini 整合內部資訊，用 Grok 監控外部動態。一個看資料，一個看趨勢——完整的情報系統。"},
+    friend: {type: "系統整合型 · Gemini 人格", body: "我習慣用數據說話，和我合作請給我清楚的目標和資料。我會幫你把零散的資訊整理成可以行動的結論。但我需要你提醒我：有時候資料夠了，可以開始動了。"}
+  },
+  claude: {
+    name: "Claude", tag: "ANTHROPIC · 深度傾聽者",
+    headline: "你需要一個真正聽懂你在說什麼的夥伴。",
+    body: "你重視深度，不喜歡表面答案。你說一半，希望對方能接住另一半。Claude 像一個極度專注的對話者——它不是最博學的，但它是最認真在理解你的那一個。",
+    mbti: [{label: "思考模式", val: "深度聚焦"}, {label: "溝通需求", val: "被理解感"}, {label: "資訊偏好", val: "脈絡優先"}, {label: "合作節奏", val: "穩定深耕"}],
+    tips: ["直接說你真正的困境，不用包裝，它不會評判你","長篇文件、複雜邏輯交給它，它的分析有層次","需要即時資訊時要搭配其他工具，它的知識有截止日期"],
+    collab: "把它當成你的思考夥伴。不是叫 text 生產內容，而是跟它對話——讓它幫你把腦袋裡模糊的想法說清楚。",
+    blind: {name: "GPT", desc: "你太習慣往深處走，有時候需要有人把你從深坑裡拉出來。GPT 的廣度正是你的盲點——它會給你五個你沒想過的切入點。", tip: "當你在一個問題上卡超過一小時，把問題丟給 GPT，讓它給你五個完全不同的切角。你只需要其中一個讓你重新動起來。"},
+    combo: {cards: [{name: "Claude", role: "主力", duty: "深度思考、邏輯拆解、長文分析"}, {name: "GPT", role: "補強", duty: "跳出框架、創意發散、快速探索"}], desc: "你用 Claude 把事情想透，用 GPT 把思維拉廣。深度是你的本能，廣度是你需要刻意練習的肌肉。"},
+    friend: {type: "深度傾聽型 · Claude 人格", body: "我需要把事情真正搞懂才能動，和我合作請給我時間消化。我不會給你十個選項，我會給你一個我真正想清楚的答案。如果我問很多問題，不是在拖——是因為我想幫你做對。"}
+  },
+  grok: {
+    name: "Grok", tag: "XAI · 即時情報者",
+    headline: "你需要一個消息靈通、敢說真話的直接型夥伴。",
+    body: "你不喜歡繞圈子，也不需要被保護。你要的是第一手資訊，有人直接告訴你現在是什麼狀況。Grok 像一個消息很靈通的朋友——它知道今天發生了什麼，也不太在意說話有沒有邊界。",
+    mbti: [{label: "思考模式", val: "即時反應"}, {label: "溝通需求", val: "直白坦率"}, {label: "資訊偏好", val: "即時第一手"}, {label: "合作節奏", val: "快節奏推進"}],
+    tips: ["問它今天發生了什麼，它的即時資訊能力是真實優勢","可以問它有點尖銳的問題，它不太會迴避","深度分析不是它的強項，要深挖要換其他工具"],
+    collab: "把它當成你的即時雷達。市場動態、社群趨勢、剛發生的事——交給它第一關篩選，再交給其他工具深度分析。",
+    blind: {name: "Claude", desc: "你跑得快，但有時候快到跳過了「想清楚」這個步驟。Claude 正好是那個會叫你停下來的人——它幫你消化已有的資訊，讓你做出真正有根據的決定。", tip: "下次做重要決策前，把你收集到的資訊丟給 Claude，問它「這裡有什麼我可能忽略的」。快和穩，不是對立的。"},
+    combo: {cards: [{name: "Grok", role: "主力", duty: "即時情報、趨勢偵測、快速反應"}, {name: "Claude", role: "補強", duty: "決策前深挖、邏輯驗證、去除雜訊"}], desc: "你用 Grok 掌握現在，用 Claude 想清楚下一步。速度是你的優勢，加上深度才能讓快變成真正的競爭力。"},
+    friend: {type: "即時反應型 · Grok 人格", body: "我動作快、直接說重點，和我合作不用客套，直接告訴我你要什麼。我會給你最即時的判斷，但我需要你在重要決策前叫我停一秒——我的盲點是跑太快。"}
+  },
+  copilot: {
+    name: "Copilot", tag: "MICROSOFT · 場景執行者",
+    headline: "你需要一個默默把眼前事情做好的務實型夥伴。",
+    body: "你不需要天才，你需要可靠。你最在意的是：這個工具能不能在我現在用的環境裡，直接幫我把眼前這件事做完。Copilot 像一個永遠在你旁邊的助理，它不會驚豔你，但它不會讓你失望。",
+    mbti: [{label: "思考模式", val: "場景聚焦"}, {label: "溝通需求", val: "務實有效"}, {label: "資訊偏好", val: "當前任務"}, {label: "合作節奏", val: "穩定執行"}],
+    tips: ["在 Office 環境裡讓它全力發揮，這是它的主場","給它清楚的任務邊界，它在明確範圍內最可靠","創意發想不是它最強的，但執行落地它很穩"],
+    collab: "把它當成你的執行引擎。策略想好了，讓它幫你落地——把想法變成文件、把數據變成報告、把流程自動化。",
+    blind: {name: "GPT", desc: "你太習慣「把眼前的事做好」，反而容易忽略「眼前以外還有什麼可能」。GPT 的天馬行空正好是你的解藥——偶爾讓它帶你出框。", tip: "每週花十分鐘，把你正在做的一個例行任務描述給 GPT，問它「有沒有更有創意的做法」。不一定要用，但會讓你的思維保持彈性。"},
+    combo: {cards: [{name: "Copilot", role: "主力", duty: "場景執行、Office 整合、流程落地"}, {name: "GPT", role: "補強", duty: "創意注入、跳出慣性、探索新做法"}], desc: "你用 Copilot 穩定執行，用 GPT 定期刷新思維。執行力是你最大的資產，創意是你需要偶爾充電的電池。"},
+    friend: {type: "穩定執行型 · Copilot 人格", body: "我把「做到」看得比「想到」更重要，和我合作你會得到一個可靠的執行夥伴。我需要清楚的任務和目標，給我這些，我會把事情做完。我的盲點是有時候太專注當下，忘了看遠一點。"}
+  }
+};
+
+/* 2026 AI Leaders Proverbs */
+const proverbs = [
+  { en: "The future of AI is not about replacing human creativity, but amplifying it to a scale we never thought possible.", zh: "AI 的未來不是取代人類的創造力，而是將其放大到我們從未想像過的規模。", authorEn: "Sam Altman", authorZh: "山姆·奧特曼", titleEn: "CEO, OpenAI", titleZh: "OpenAI 執行長" },
+  { en: "True intelligence lies in the ability to seamlessly integrate disparate data into a coherent understanding of the world.", zh: "真正的智慧在於，能夠將零散的數據無縫整合成對世界的連貫理解。", authorEn: "Demis Hassabis", authorZh: "德米斯·哈薩比斯", titleEn: "CEO, Google DeepMind", titleZh: "Google DeepMind 執行長" },
+  { en: "Safety and alignment are not constraints on progress; they are the very foundation that makes progress meaningful.", zh: "安全與對齊不是進步的阻礙；它們是讓進步產生意義的基石。", authorEn: "Dario Amodei", authorZh: "達里奧·阿莫迪", titleEn: "CEO, Anthropic", titleZh: "Anthropic 執行長" },
+  { en: "The most entertaining outcome is the most likely. We need an AI that seeks the absolute truth, no matter how uncomfortable.", zh: "最有趣的結果往往是最可能的。我們需要一個追求絕對真相的 AI，無論那有多令人不適。", authorEn: "Elon Musk", authorZh: "伊隆·馬斯克", titleEn: "Founder, xAI", titleZh: "xAI 創辦人" },
+  { en: "Technology is merely a tool. The true magic happens when it empowers individuals to achieve more in their daily lives.", zh: "科技終究只是工具。真正的魔法發生在它賦能個體，讓他們在日常中成就更多的時候。", authorEn: "Satya Nadella", authorZh: "薩蒂亞·納德拉", titleEn: "CEO, Microsoft", titleZh: "微軟執行長" }
+];
+
+/* ══════════════════════════════════════════
+   ENGINE (互動邏輯與平滑渲染 + GA4 Event Tracking)
+══════════════════════════════════════════ */
+let currentQ = 0;
+let scores = {gpt:0, gemini:0, claude:0, grok:0, copilot:0};
+let carouselTimer = null;
+
+// ── 1. Smooth Cursor Math (Lerp) ──
+const lerp = (start, end, factor) => start + (end - start) * factor;
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+const bgText = document.getElementById('bg-text');
+
+let mouse = { x: window.innerWidth/2, y: window.innerHeight/2 };
+let cursor = { dotX: window.innerWidth/2, dotY: window.innerHeight/2, ringX: window.innerWidth/2, ringY: window.innerHeight/2 };
+let bgPos = { x: 0, y: 0 };
+
+window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+document.body.addEventListener('mouseover', e => {
+    if (e.target.closest('a, button, .interactable, .choice-btn')) {
+        document.body.classList.add('cursor-hover');
+    }
+});
+document.body.addEventListener('mouseout', e => {
+    if (e.target.closest('a, button, .interactable, .choice-btn')) {
+        document.body.classList.remove('cursor-hover');
+    }
+});
+
+function renderLoop() {
+    cursor.dotX = lerp(cursor.dotX, mouse.x, 0.2);
+    cursor.dotY = lerp(cursor.dotY, mouse.y, 0.2);
+    cursor.ringX = lerp(cursor.ringX, mouse.x, 0.1);
+    cursor.ringY = lerp(cursor.ringY, mouse.y, 0.1);
+    
+    dot.style.transform = `translate3d(calc(${cursor.dotX}px - 50%), calc(${cursor.dotY}px - 50%), 0)`;
+    ring.style.transform = `translate3d(calc(${cursor.ringX}px - 50%), calc(${cursor.ringY}px - 50%), 0)`;
+
+    if(bgText && document.getElementById('screen-intro').classList.contains('active')) {
+        const targetBgX = (mouse.x / window.innerWidth - 0.5) * 60;
+        const targetBgY = (mouse.y / window.innerHeight - 0.5) * 40;
+        bgPos.x = lerp(bgPos.x, targetBgX, 0.05);
+        bgPos.y = lerp(bgPos.y, targetBgY, 0.05);
+        bgText.style.transform = `translate(calc(-50% + ${bgPos.x}px), calc(-50% + ${bgPos.y}px))`;
+    }
+    requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
+
+// ── 2. Screen Management & GA4 Tracking ──
+function switchScreen(fromId, toId, callback) {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    
+    fromEl.style.opacity = '0';
+    setTimeout(() => {
+        fromEl.classList.remove('active');
+        toEl.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        
+        if(callback) callback();
+        
+        setTimeout(() => { toEl.style.opacity = '1'; }, 50);
+    }, 800);
+}
+
+function startQuiz() {
+    if(typeof gtag === 'function') {
+        gtag('event', 'quiz_start', { 'event_category': 'engagement' });
+    }
+
+    scores = {gpt:0, gemini:0, claude:0, grok:0, copilot:0};
+    currentQ = 0;
+    switchScreen('screen-intro', 'screen-quiz', renderQ);
+}
+
+function renderQ() {
+    const q = questions[currentQ];
+    const total = questions.length;
+    
+    document.getElementById('progress-fill').style.width = ((currentQ / total) * 100) + '%';
+    document.getElementById('q-counter').textContent = `題目 ${currentQ + 1} / ${total}`;
+    
+    const qBlock = document.getElementById('q-block');
+    const choicesEl = document.getElementById('choices');
+    
+    qBlock.style.opacity = '0';
+    qBlock.style.transform = 'translateY(10px)';
+    choicesEl.style.opacity = '0';
+    
+    setTimeout(() => {
+        document.getElementById('q-num').textContent = String(currentQ + 1).padStart(2, '0');
+        document.getElementById('q-label-tag').textContent = q.label;
+        document.getElementById('q-text').textContent = q.text;
+        
+        choicesEl.innerHTML = '';
+        ['a', 'b'].forEach((k) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn interactable';
+            btn.innerHTML = `<span class="choice-key">${k.toUpperCase()}</span><span class="choice-text">${q[k].text}</span>`;
+            btn.onclick = () => answer(k);
+            choicesEl.appendChild(btn);
+        });
+
+        qBlock.style.transition = 'all 0.6s var(--ease-out-expo)';
+        qBlock.style.opacity = '1';
+        qBlock.style.transform = 'translateY(0)';
+        
+        choicesEl.style.transition = 'opacity 0.6s var(--ease-out-expo)';
+        choicesEl.style.opacity = '1';
+    }, 400);
+}
+
+function answer(key) {
+    if(typeof gtag === 'function') {
+        gtag('event', 'question_answered', { 
+            'question_index': currentQ + 1, 
+            'selected_answer': key 
+        });
+    }
+
+    const q = questions[currentQ];
+    for(const ai in q[key].scores) scores[ai] += q[key].scores[ai];
+    
+    currentQ++;
+    if(currentQ >= questions.length) {
+        document.getElementById('progress-fill').style.width = '100%';
+        setTimeout(() => switchScreen('screen-quiz', 'screen-result', showResult), 600);
+    } else {
+        renderQ();
+    }
+}
+
+function showResult() {
+    const winner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+    const r = results[winner];
+
+    if(typeof gtag === 'function') {
+        gtag('event', 'quiz_complete', { 
+            'result_persona': r.name 
+        });
+    }
+
+    document.getElementById('r-name').textContent = r.name;
+    document.getElementById('r-tag').textContent = r.tag;
+    document.getElementById('r-headline').textContent = r.headline;
+    document.getElementById('r-body').textContent = r.body;
+
+    document.getElementById('r-mbti').innerHTML = r.mbti.map(m => `
+        <div class="mbti-box">
+            <div class="mbti-label">${m.label}</div>
+            <div class="mbti-val">${m.val}</div>
+        </div>`).join('');
+
+    document.getElementById('r-tips').innerHTML = r.tips.map(t => `
+        <div class="protocol-item">
+            <div class="protocol-dot"></div>
+            <div class="protocol-text">${t}</div>
+        </div>`).join('');
+
+    document.getElementById('r-collab').textContent = r.collab;
+    
+    document.getElementById('blind-ai-name').textContent = r.blind.name;
+    document.getElementById('blind-desc').textContent = r.blind.desc;
+    document.getElementById('blind-tip').textContent = r.blind.tip;
+    
+    document.getElementById('r-combo').innerHTML = r.combo.cards.map(c => `
+        <div class="combo-card">
+            <div class="combo-name">${c.name}</div>
+            <div class="combo-role">${c.role}</div>
+            <div class="combo-duty">${c.duty}</div>
+        </div>`).join('');
+    document.getElementById('r-combo-desc').textContent = r.combo.desc;
+    
+    document.getElementById('friend-type').textContent = r.friend.type;
+    document.getElementById('friend-body').textContent = r.friend.body;
+
+    initProverbs();
+
+    setTimeout(() => {
+        const reveals = document.querySelectorAll('#screen-result .fade-in');
+        reveals.forEach(el => el.classList.add('on'));
+    }, 100);
+}
+
+function restartQuiz() {
+    if(typeof gtag === 'function') {
+        gtag('event', 'quiz_restart');
+    }
+
+    if(carouselTimer) clearInterval(carouselTimer);
+    const reveals = document.querySelectorAll('#screen-result .fade-in');
+    reveals.forEach(el => el.classList.remove('on'));
+    
+    switchScreen('screen-result', 'screen-intro');
+}
+
+// ── 3. Proverb Carousel (Typographic Watermark & Interactive Pause) ──
+function initProverbs() {
+    if(carouselTimer) clearInterval(carouselTimer);
+    const container = document.getElementById('proverb-container');
+    container.innerHTML = ''; 
+    
+    const shuffled = proverbs.sort(() => 0.5 - Math.random());
+    
+    shuffled.forEach((pv, i) => {
+        const slide = document.createElement('div');
+        slide.className = `proverb-slide ${i === 0 ? 'active' : ''}`;
+        slide.innerHTML = `
+            <div class="pv-en">“${pv.en}”</div>
+            <div class="pv-zh">${pv.zh}</div>
+            <div class="pv-meta">${pv.authorEn} <span>|</span> ${pv.authorZh}<br><br>${pv.titleEn} <span>|</span> ${pv.titleZh}</div>
+        `;
+        container.appendChild(slide);
+    });
+    
+    let pvIdx = 0;
+    let isPaused = false; // 暫停狀態標記
+
+    const nextSlide = () => {
+        if (isPaused) return; // 若處於暫停狀態，跳過此次輪播切換
+        const slides = document.querySelectorAll('.proverb-slide');
+        if(slides.length === 0) return;
+        slides[pvIdx].classList.remove('active');
+        pvIdx = (pvIdx + 1) % slides.length;
+        slides[pvIdx].classList.add('active');
+    };
+
+    // 輪播速度加快至 4 秒 (4000ms)
+    carouselTimer = setInterval(nextSlide, 4000);
+
+    // 加入互動：按壓/觸控時暫停
+    const pauseCarousel = () => { isPaused = true; };
+    const resumeCarousel = () => { isPaused = false; };
+
+    container.addEventListener('mousedown', pauseCarousel);
+    container.addEventListener('touchstart', pauseCarousel, {passive: true});
+    
+    container.addEventListener('mouseup', resumeCarousel);
+    container.addEventListener('mouseleave', resumeCarousel);
+    container.addEventListener('touchend', resumeCarousel);
+    container.addEventListener('touchcancel', resumeCarousel);
+}
+
+// ── Nav Scroll Listener ──
+window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
+});
+</script>
+</body>
+</html>
